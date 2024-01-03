@@ -30,22 +30,7 @@ public class CsvLoaderService {
                 .drop("airport_id")
                 .withColumnRenamed("name", "OriginAirportName")
                 .join(airports, flights.col("DestAirportID").equalTo(airports.col("airport_id")), "left")
-                .withColumnRenamed("name", "DestAirportName")
-                .drop();
-    }
-
-    public Dataset<Row> normalizeDataFrame(Dataset<Row> df) {
-        for (String columnName : df.columns()) {
-            String newName = convertSnakeCaseToCamelCase(columnName);
-            df = df.withColumnRenamed(columnName, newName); //TODO: Optimize to not reassign for every column, using select()
-        }
-        return df;
-    }
-
-    public static String convertSnakeCaseToCamelCase(String input) {
-        return Arrays.stream(input.split("_"))
-                .map(word -> word.isEmpty() ? word : Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase())
-                .collect(Collectors.joining());
+                .withColumnRenamed("name", "DestAirportName");
     }
 
     public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {    //TODO: Can be done differently, without UDFs
