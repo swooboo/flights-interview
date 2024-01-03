@@ -24,7 +24,6 @@ public class SparkSpringApplication implements CommandLineRunner {
         Dataset<Row> airportsDf = csvLoaderService.loadCsv("/tmp/airports.csv");
         Dataset<Row> flightsDf = csvLoaderService.loadCsv("/tmp/flights.csv");
 
-        airportsDf = csvLoaderService.normalizeDataFrame(airportsDf);
-        flightsDf = csvLoaderService.normalizeDataFrame(flightsDf);
+        Dataset<Row> flightsJoinedDf = csvLoaderService.joinFlightsWithAirports(flightsDf, airportsDf);
     }
 }

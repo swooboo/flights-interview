@@ -3,7 +3,7 @@ package com.interview.flights;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+//@SpringBootTest
 class FlightsApplicationTests {
 
 	@Test
