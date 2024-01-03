@@ -21,9 +21,10 @@ public class SparkSpringApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        Dataset<Row> airportsDf = csvLoaderService.loadCsv("/tmp/airports.csv", Schemas.AIRPORTS_SCHEMA);
+        Dataset<Row> airportsDf = csvLoaderService.loadCsv("/tmp/airports.csv", Schemas.AIRPORTS_SCHEMA);   //TODO: Should be configurable
         Dataset<Row> flightsDf = csvLoaderService.loadCsv("/tmp/flights.csv", Schemas.FLIGHTS_SCHEMA);
 
         Dataset<Row> flightsJoinedDf = csvLoaderService.joinFlightsWithAirports(flightsDf, airportsDf);
+        Dataset<Row> flightsWithDatesDf = csvLoaderService.addLatestFlightDateColumn(flightsJoinedDf);
     }
 }

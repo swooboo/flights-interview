@@ -4,9 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.api.java.UDF2;
+import org.apache.spark.sql.functions;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.springframework.stereotype.Service;
 
+import java.sql.Date;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -27,10 +31,9 @@ public class CsvLoaderService {
     }
 
     public Dataset<Row> normalizeDataFrame(Dataset<Row> df) {
-        // Rename each column to follow CapitalCamelCase
         for (String columnName : df.columns()) {
             String newName = convertSnakeCaseToCamelCase(columnName);
-            df = df.withColumnRenamed(columnName, newName);
+            df = df.withColumnRenamed(columnName, newName); //TODO: Optimize to not reassign for every column, using select()
         }
         return df;
     }
@@ -39,5 +42,11 @@ public class CsvLoaderService {
         return Arrays.stream(input.split("_"))
                 .map(word -> word.isEmpty() ? word : Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase())
                 .collect(Collectors.joining());
+    }
+
+    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {
+        UDF2<Integer, Integer, Date> getLatestDateUdf = DateUtils::getLatestDate;
+        sparkSession.udf().register("getLatestDate", getLatestDateUdf, DataTypes.DateType);
+        return df.withColumn("LatestFlightDate", functions.callUDF("getLatestDate", df.col("DayofMonth"), df.col("DayofWeek")));
     }
 }
