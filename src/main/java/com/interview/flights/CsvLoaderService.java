@@ -27,7 +27,11 @@ public class CsvLoaderService {
 
     public Dataset<Row> joinFlightsWithAirports(Dataset<Row> flights, Dataset<Row> airports) {
         return flights.join(airports, flights.col("OriginAirportID").equalTo(airports.col("airport_id")), "left")
-                .join(airports, flights.col("DestAirportID").equalTo(airports.col("airport_id")), "left");
+                .drop("airport_id")
+                .withColumnRenamed("name", "OriginAirportName")
+                .join(airports, flights.col("DestAirportID").equalTo(airports.col("airport_id")), "left")
+                .withColumnRenamed("name", "DestAirportName")
+                .drop();
     }
 
     public Dataset<Row> normalizeDataFrame(Dataset<Row> df) {
@@ -44,7 +48,7 @@ public class CsvLoaderService {
                 .collect(Collectors.joining());
     }
 
-    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {
+    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {    //TODO: Can be done differently, without UDFs
         UDF2<Integer, Integer, Date> getLatestDateUdf = DateUtils::getLatestDate;
         sparkSession.udf().register("getLatestDate", getLatestDateUdf, DataTypes.DateType);
         return df.withColumn("LatestFlightDate", functions.callUDF("getLatestDate", df.col("DayofMonth"), df.col("DayofWeek")));
