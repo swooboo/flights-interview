@@ -11,7 +11,7 @@ public class DateUtils {
         LocalDate endOfYear = LocalDate.of(2023, 12, 31);
         LocalDate targetDate = endOfYear.with(TemporalAdjusters.previousOrSame(DayOfWeek.of(dayOfWeek)));
 
-        while (targetDate.getDayOfMonth() != dayOfMonth) { // TODO: Think about calculating more efficiently
+        while (targetDate.getDayOfMonth() != dayOfMonth) { // TODO: Can be calculated better
             targetDate = targetDate.minusWeeks(1);
             if (targetDate.getYear() != 2023) {
                 return null;

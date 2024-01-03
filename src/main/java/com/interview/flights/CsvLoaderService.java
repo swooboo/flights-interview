@@ -11,8 +11,6 @@ import org.apache.spark.sql.types.StructType;
 import org.springframework.stereotype.Service;
 
 import java.sql.Date;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +31,7 @@ public class CsvLoaderService {
                 .withColumnRenamed("name", "DestAirportName");
     }
 
-    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {    //TODO: Can be done differently, without UDFs
+    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {    //TODO: Can be done without UDFs by using date range and join
         UDF2<Integer, Integer, Date> getLatestDateUdf = DateUtils::getLatestDate;
         sparkSession.udf().register("getLatestDate", getLatestDateUdf, DataTypes.DateType);
         return df.withColumn("LatestFlightDate", functions.callUDF("getLatestDate", df.col("DayofMonth"), df.col("DayofWeek")));
