@@ -1,16 +1,19 @@
 package com.interview.flights;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.api.java.UDF2;
-import org.apache.spark.sql.functions;
-import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.types.StructType;
 import org.springframework.stereotype.Service;
 
 import java.sql.Date;
+import java.time.LocalDate;
+
+import static org.apache.spark.sql.functions.max;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +34,33 @@ public class CsvLoaderService {
                 .withColumnRenamed("name", "DestAirportName");
     }
 
-    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {    //TODO: Can be done without UDFs by using date range and join
-        UDF2<Integer, Integer, Date> getLatestDateUdf = DateUtils::getLatestDate;
-        sparkSession.udf().register("getLatestDate", getLatestDateUdf, DataTypes.DateType);
-        return df.withColumn("LatestFlightDate", functions.callUDF("getLatestDate", df.col("DayofMonth"), df.col("DayofWeek")));
+    public Dataset<Row> addLatestFlightDateColumn(Dataset<Row> df) {
+        Dataset<Row> daysOfYear = createDaysOfYearDataset();
+
+        Dataset<Row> joined = df.join(daysOfYear,
+                df.col("DayofWeek").equalTo(daysOfYear.col("dayOfWeek"))
+                        .and(df.col("DayofMonth").equalTo(daysOfYear.col("dayOfMonth")))
+        );
+
+        joined = joined.withColumn("LatestFlightDate", max(joined.col("date"))
+                .over(Window.partitionBy(df.col("DayofWeek"), df.col("DayofMonth"))));
+
+        return joined.drop(daysOfYear.col("dayOfWeek"))
+                .drop(daysOfYear.col("dayOfMonth"))
+                .drop(daysOfYear.col("date"));
+    }
+
+    private Dataset<Row> createDaysOfYearDataset() {
+        Dataset<Long> daysRange = sparkSession.range(1, 366); // for year 2023
+        LocalDate baseDate = LocalDate.of(2023, 1, 1);
+
+        Dataset<Date> localDates = daysRange.map(
+                (MapFunction<Long, Date>) day -> Date.valueOf(baseDate.plusDays(day - 1)),
+                Encoders.DATE()
+        );
+
+        return localDates.selectExpr("value as date",
+                "dayofweek(value) as dayOfWeek",
+                "dayofmonth(value) as dayOfMonth");
     }
 }
